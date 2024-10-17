@@ -1,5 +1,8 @@
+// src/components/ZipUpload.js
 import React, { useState } from 'react';
 import JSZip from 'jszip';
+import { CloudArrowUpIcon } from '@heroicons/react/24/outline';
+
 
 function ZipUpload() {
   const [notFollowingBack, setNotFollowingBack] = useState([]);
@@ -7,16 +10,13 @@ function ZipUpload() {
 
   const extractJSON = async (zip, entryName) => {
     const entry = zip.file(entryName);
-    if (!entry) {
-      console.warn(`Entry ${entryName} not found.`);
-      return [];
-    }
+    if (!entry) return [];
 
     try {
       const data = await entry.async('string');
       return JSON.parse(data);
     } catch (e) {
-      console.error(`Failed to parse JSON from ${entryName}: ${e.message}`);
+      console.error(`Failed to parse JSON: ${e.message}`);
       return [];
     }
   };
@@ -33,7 +33,7 @@ function ZipUpload() {
         'connections/followers_and_following/followers_1.json'
       );
       const followers = new Set(
-        followersData.map((value) => value.string_list_data[0]?.value || '')
+        followersData.map((v) => v.string_list_data[0]?.value || '')
       );
 
       const followingData = await extractJSON(
@@ -41,14 +41,10 @@ function ZipUpload() {
         'connections/followers_and_following/following.json'
       );
       const following = new Set(
-        followingData.relationships_following.map(
-          (value) => value.string_list_data[0]?.value || ''
-        )
+        followingData.relationships_following.map((v) => v.string_list_data[0]?.value || '')
       );
 
-      const notFollowingBackList = [...following].filter(
-        (user) => !followers.has(user)
-      );
+      const notFollowingBackList = [...following].filter((user) => !followers.has(user));
       setNotFollowingBack(notFollowingBackList);
       setError('');
     } catch (e) {
@@ -57,29 +53,40 @@ function ZipUpload() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-5">
-      <div className="bg-white shadow-md rounded-lg p-8 max-w-lg w-full">
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          Instagram Follow Checker
-        </h1>
+    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+      <div className="flex items-center justify-center mb-4">
+        <label
+          htmlFor="upload"
+          className="flex items-center cursor-pointer px-4 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+        >
+          <CloudArrowUpIcon className="h-6 w-6 mr-2" />
+          Upload ZIP
+        </label>
         <input
+          id="upload"
           type="file"
           accept=".zip"
           onChange={handleFileUpload}
-          className="mb-4 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="hidden"
         />
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-        <h2 className="text-xl font-semibold mt-6 mb-4">
-          Not Following Back:
-        </h2>
-        <ul className="max-h-40 overflow-auto border rounded-md p-4">
-          {notFollowingBack.map((user, index) => (
-            <li key={index} className="text-gray-800 py-1">
+      </div>
+
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+        Not Following Back:
+      </h2>
+      <ul className="max-h-40 overflow-auto border rounded-md p-4 bg-gray-50 dark:bg-gray-700">
+        {notFollowingBack.length > 0 ? (
+          notFollowingBack.map((user, index) => (
+            <li key={index} className="py-1 text-gray-800 dark:text-white">
               {user}
             </li>
-          ))}
-        </ul>
-      </div>
+          ))
+        ) : (
+          <li className="text-gray-500 dark:text-gray-400">No data available</li>
+        )}
+      </ul>
     </div>
   );
 }
